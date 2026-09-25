@@ -1,0 +1,73 @@
+name: aexyron-fabric
+
+topology:
+  nodes:
+    # 2 Spine Switches
+    spine-01:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+    spine-02:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+
+    # 4 Leaf Switches
+    leaf-01:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+    leaf-02:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+    leaf-03:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+    leaf-04:
+      kind: linux
+      image: frrouting/frr:v8.4.1
+
+    # 8 GPU & Traffic Endpoints
+    host-01:
+      kind: linux
+      image: alpine:latest
+    host-02:
+      kind: linux
+      image: alpine:latest
+    host-03:
+      kind: linux
+      image: alpine:latest
+    host-04:
+      kind: linux
+      image: alpine:latest
+    host-05:
+      kind: linux
+      image: alpine:latest
+    host-06:
+      kind: linux
+      image: alpine:latest
+    host-07:
+      kind: linux
+      image: alpine:latest
+    host-08:
+      kind: linux
+      image: alpine:latest
+
+  links:
+    # Spine-Leaf Interconnects (ECMP Fabrics)
+    - endpoints: ["spine-01:eth1", "leaf-01:eth1"]
+    - endpoints: ["spine-01:eth2", "leaf-02:eth1"]
+    - endpoints: ["spine-01:eth3", "leaf-03:eth1"]
+    - endpoints: ["spine-01:eth4", "leaf-04:eth1"]
+
+    - endpoints: ["spine-02:eth1", "leaf-01:eth2"]
+    - endpoints: ["spine-02:eth2", "leaf-02:eth2"]
+    - endpoints: ["spine-02:eth3", "leaf-03:eth2"]
+    - endpoints: ["spine-02:eth4", "leaf-04:eth2"]
+
+    # Host Access Links
+    - endpoints: ["leaf-01:eth3", "host-01:eth1"]
+    - endpoints: ["leaf-01:eth4", "host-02:eth1"]
+    - endpoints: ["leaf-02:eth3", "host-03:eth1"]
+    - endpoints: ["leaf-02:eth4", "host-04:eth1"]
+    - endpoints: ["leaf-03:eth3", "host-05:eth1"]
+    - endpoints: ["leaf-03:eth4", "host-06:eth1"]
+    - endpoints: ["leaf-04:eth3", "host-07:eth1"]
+    - endpoints: ["leaf-04:eth4", "host-08:eth1"]
