@@ -115,102 +115,125 @@ This project fills that critical gap.
 
 ---
 
-## 4. Seven-Layer System Architecture
+## 4. System Architecture
 
-```mermaid
-flowchart TD
-    subgraph L1 ["1. Streaming Telemetry Bus"]
-        gNMI[gNMI Counters & Optics]
-        eBPF[eBPF Kernel Probes]
-        sFlow[sFlow Matrix]
-        OTel[OpenTelemetry Tracing]
-        Kafka[(Apache Kafka Event Bus)]
-        gNMI & eBPF & sFlow & OTel --> Kafka
-    end
+The Self-Healing AI Network is organized into seven architectural layers, each with clearly defined responsibilities, interfaces, and failure modes. The design follows three core principles:
+1. **Safety First**: No action without preflight simulation, invariant policy verification, and automated rollback capabilities.
+2. **Explainability**: Every decision is traceable, backed by Bayesian causal attribution and human-readable incident narratives.
+3. **Graduated Autonomy**: Operators maintain full control over the automation level across five formal tiers (L0–L4).
 
-    subgraph L2 ["2. Live Digital Twin (>=85% Fidelity)"]
-        Sync[Graph Synchronizer (30s Cycle)]
-        Neo4j[(Neo4j Graph Database\nTopology • Routing • Metrics)]
-        Kafka --> Sync --> Neo4j
-    end
+### 4.1 Seven-Layer Architecture
 
-    subgraph L3 ["3. AI Anomaly (<5s) & Prediction Engine (>=20s)"]
-        IF[Isolation Forest\nFast Anomaly <5s]
-        TFT[XGBoost & TFT\nHorizon >=20s]
-        Kafka --> IF
-        Kafka --> TFT
-    end
+*Figure 1: Self-Healing AI Network — Seven-Layer Architecture*
 
-    subgraph L4 ["4. What-If Counterfactual Engine (<2s Sim)"]
-        Counterfactual[Hypothetical Branch Sim]
-        RiskScorer[Blast-Radius Scorer]
-        RedisCache[(Redis Pre-Computed\nPlan Cache <2ms)]
-        Neo4j --> Counterfactual --> RiskScorer --> RedisCache
-    end
-
-    subgraph L5 ["5. Root-Cause Analysis (RCA)"]
-        Causal[Causal Graph DAG]
-        Bayesian[Bayesian Inference Engine]
-        Narrative[Incident Narrative Synthesizer]
-        Neo4j & IF & TFT --> Causal --> Bayesian --> Narrative
-    end
-
-    subgraph L6 ["6. Decision Engine & Guardrails (L0-L4)"]
-        OPA[Open Policy Agent (OPA)\nAutonomy Gate L0-L4]
-        Preflight[Preflight Twin Sim]
-        Canary[Canary Shift (5%) & Rollback]
-        Breaker[Rate Limiter & Circuit Breaker]
-        RedisCache -. Precomputed Plan .-> OPA
-        Bayesian -. Causal Plan .-> OPA
-        OPA --> Preflight --> Canary --> Breaker
-    end
-
-    subgraph L7 ["7. Network Black Box (Cryptographic Ledger)"]
-        Ledger[SHA-256 Hash-Chained Log]
-        Replay[Deterministic Forensics Replay]
-        Kafka & OPA & Breaker -. Event Stream .-> Ledger --> Replay
-    end
-
-    Breaker ==>|Netconf / gNOI| DataPlane[Data Plane Switches & NICs]
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ LAYER 7: DECISION ENGINE + EXECUTION + BLACK BOX                       │
+│  ┌────────────────┐    ┌────────────────┐    ┌──────────────────────┐  │
+│  │   OPA Policy   │    │ Action         │    │  Network Black Box   │  │
+│  │   Engine       │───►│ Executor       │───►│  (Kafka → S3/Disk)   │  │
+│  │   (Rego rules) │    │ (gNMI/Ansible) │    │  Hash-chained replay │  │
+│  └────────────────┘    └────────────────┘    └──────────────────────┘  │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────┴────────────────────────────────────┐
+│ LAYER 6: ROOT-CAUSE ANALYSIS + RISK FUSION                             │
+│  ┌────────────────────┐    ┌────────────────┐    ┌──────────────────┐  │
+│  │ Causal Graph       │    │ Bayesian       │    │ LLM Narrative    │  │
+│  │ (Neo4j traversal)  │───►│ Inference      │───►│ Generator        │  │
+│  └────────────────────┘    └────────────────┘    └──────────────────┘  │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────┴────────────────────────────────────┐
+│ LAYER 5: WHAT-IF ENGINE                                                │
+│  ┌──────────────┐    ┌──────────────┐    ┌───────────┐   ┌───────────┐ │
+│  │ Failure      │    │ Routing      │    │ Risk      │   │ Recovery  │ │
+│  │ Injection    │───►│ Reconvergence│───►│ Scoring   │──►│ Plan Cache│ │
+│  │ Matrix       │    │ Simulator    │    │           │   │ (Redis)   │ │
+│  └──────────────┘    └──────────────┘    └───────────┘   └───────────┘ │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────┴────────────────────────────────────┐
+│ LAYER 4: AI ANOMALY ENGINE                                             │
+│  ┌────────────────┐    ┌────────────────┐    ┌──────────────────────┐  │
+│  │ Isolation      │    │ XGBoost /      │    │ Optional GNN on      │  │
+│  │ Forest (<5s)   │    │ TFT (≥20s)     │    │ Topology (PyG)       │  │
+│  │ (per link)     │    │ (predictive)   │    │                      │  │
+│  └────────────────┘    └────────────────┘    └──────────────────────┘  │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────┴────────────────────────────────────┐
+│ LAYER 3: LIVE DIGITAL TWIN                                             │
+│  ┌────────────────────┐    ┌────────────────┐    ┌──────────────────┐  │
+│  │ Neo4j Topology     │    │ Config State   │    │ Routing Table    │  │
+│  │ Graph (30s sync)   │    │ (Batfish)      │    │ Snapshots (FIB)  │  │
+│  │                    │    │                │    │ + Live Metrics   │  │
+│  └────────────────────┘    └────────────────┘    └──────────────────┘  │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────┴────────────────────────────────────┐
+│ LAYER 2: TELEMETRY BUS                                                 │
+│  ┌──────────────┐    ┌──────────────┐    ┌───────────────────────────┐ │
+│  │ gNMIc / OTel │───►│ Kafka Bus    │───►│ Prometheus (metrics)      │ │
+│  │ sFlow / eBPF │    │ (>100k evt/s)│    │ ClickHouse (flows) / Loki │ │
+│  └──────────────┘    └──────────────┘    └───────────────────────────┘ │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────┴────────────────────────────────────┐
+│ LAYER 1: DATA PLANE                                                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │
+│  │ Servers / NIC│  │Switches (OVS) │  │Routers (FRR) │  │ GPUs / Hosts│ │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └─────────────┘ │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Detailed Layer Specifications
+#### Detailed Layer Responsibilities
 
-#### Layer 1: Streaming Telemetry Bus
-- **gNMI**: High-frequency streaming telemetry for interface counters, optical power levels, and hardware buffer statistics.
-- **eBPF Probes**: Kernel-space hooks on host nodes monitoring TCP round-trip time (RTT), retransmission rates, and socket drop events.
-- **sFlow / IPFIX**: Flow sampling providing real-time visibility into traffic matrices and ECMP hash dispersion.
-- **Apache Kafka**: Multi-partitioned streaming bus ingesting $> 100,000$ events/second with sub-millisecond serialization overhead.
+- **Layer 1: Data Plane**
+  - Physical and virtual network infrastructure: 2-spine, 4-leaf Clos fabric running FRRouting (BGP unnumbered / ECMP) and Open vSwitch (OVS) with server endpoints hosting distributed GPU workloads.
+- **Layer 2: Telemetry Bus**
+  - High-throughput streaming bus ingesting multi-modal telemetry across `gNMIc` (hardware counters, optical power levels), `eBPF` (socket drops, TCP RTT distribution), `sFlow` (flow matrix sampling), and `OpenTelemetry`.
+  - Ingestion backbone powered by **Apache Kafka** partitioned by device and interface hash at $> 100\text{k}$ events/sec, feeding long-term analytics into Prometheus, ClickHouse, and Loki.
+- **Layer 3: Live Digital Twin**
+  - **Neo4j**-backed property graph mirroring topology, device operational states, BGP peerings, and live queue buffer occupancy.
+  - Maintains continuous 30-second full reconciliation with sub-second event-driven delta updates, achieving $\ge 85\%$ routing fidelity verified against switch FIB tables. Incorporates Batfish configuration parsing for declarative control-plane analysis.
+- **Layer 4: AI Anomaly Engine**
+  - **Fast-Path Detection (< 5s)**: Unsupervised Isolation Forests evaluate sliding statistical windows (mean, standard deviation, delta trend, latest value) to catch microburst drops and silent degradation.
+  - **Predictive Failure Forecasting (≥ 20s ahead)**: Multi-horizon Temporal Fusion Transformers (TFT) and XGBoost forecast optical transceiver blowouts and buffer incast exhaustion.
+  - **Topology-Aware GNN**: Optional graph neural network (PyTorch Geometric) for spatial graph embedding and cross-layer relational reasoning.
+- **Layer 5: What-If Engine**
+  - Continuously explores hypothetical failure branches on an in-memory clone of the digital twin *before* physical disruption occurs ($< 2\text{s}$ simulation time).
+  - Evaluates topological failure matrices, simulates BGP/ECMP reconvergence, calculates downstream blast radii, and pre-caches signed recovery recipes in **Redis** for instant ($< 2\text{ms}$) execution.
+- **Layer 6: Root-Cause Analysis + Risk Fusion**
+  - **Causal Graph Traversal**: Disambiguates symptom cascades from primary root causes across topology and dependency DAGs.
+  - **Bayesian Inference**: Computes posterior probabilities $P(\text{Root Cause } R_i \mid \text{Observed Symptoms } S_1 \dots S_k)$ to eliminate alert storms.
+  - **LLM Narrative Generator**: Synthesizes structured, human-readable post-mortem explanations with timeline, root cause, and remediation rationale.
+- **Layer 7: Decision Engine + Execution + Black Box**
+  - **OPA Policy Engine**: Enforces invariant safety guardrails written in Rego across five autonomy levels (L0–L4).
+  - **Preflight Sandbox & Canary Execution**: Candidate remediations are preflighted on the twin clone, deployed with a 5% traffic canary, and subject to automatic sub-1.5s rollback if telemetry regresses.
+  - **Circuit Breaker**: Prevents remediation cascading if $> 3$ actions occur within 60s in the same failure domain.
+  - **Network Black Box**: Append-only, SHA-256 hash-chained flight recorder guaranteeing mathematical auditability and deterministic second-by-second forensic incident replay.
 
-#### Layer 2: Live Digital Twin
-- **Topology Model**: Modeled in Neo4j with nodes (`Device`, `Interface`, `BGP_Peer`, `RoutePrefix`) and edges (`CONNECTED_TO`, `PEERS_WITH`, `ROUTES_VIA`).
-- **Reconciliation**: Continuous 30-second full topology graph synchronization supplemented with sub-second event-driven delta updates.
-- **Routing Fidelity**: $\ge 85\%$ verified accuracy against live switch Forwarding Information Base (FIB) state.
+### 4.2 Data Flow Narrative
 
-#### Layer 3: AI Anomaly & Failure Prediction Engine
-- **Fast-Path Anomaly Detection**: Unsupervised Isolation Forest over sliding statistical windows (mean, standard deviation, delta trend, latest value), achieving detection in $< 5\text{s}$.
-- **Multi-Horizon Failure Prediction**: Temporal Fusion Transformer (TFT) and XGBoost forecasting optical laser decay, queue incast saturation, and CRC error acceleration $\ge 20\text{s}$ prior to service disruption.
+The autonomous closed-loop operation executes along a continuous operational lifecycle:
 
-#### Layer 4: What-If Counterfactual Reasoning Engine
-- **Hypothetical Failure Injection**: Proactively injects hypothetical link cuts, switch drops, and peer flaps onto an in-memory clone of the digital twin ($< 2\text{s}$ per scenario).
-- **Blast-Radius Scoring**: Formally evaluates capacity drain, remaining ECMP paths, and affected route prefixes.
-- **Plan Cache**: Pre-computed, validated remediation recipes stored in Redis, enabling instant ($< 2\text{ms}$) retrieval upon anomaly emergence.
-
-#### Layer 5: Root-Cause Analysis (RCA)
-- **Causal Graph**: Traverses topology and dependency DAGs to eliminate downstream symptom echoes.
-- **Bayesian Inference**: Computes posterior probabilities $P(\text{Root Cause } R_i \mid \text{Observed Symptoms } S_1 \dots S_k)$ to pinpoint the primary fault origin.
-- **Incident Narratives**: Synthesizes human-readable post-mortem summaries detailing timeline, root cause, and remediation impact.
-
-#### Layer 6: Decision Engine & Guardrails
-- **Autonomy Levels (L0–L4)**: Governs operational execution from passive advisory (L0) to zero-touch autonomous repair (L4).
-- **OPA Rego Policy Enforcement**: Deterministic guardrails (e.g., maximum drained capacity $\le 25\%$, preserving redundant paths for active GPU jobs).
-- **Canary & Rollback**: Shifts 5% traffic canary, monitors telemetry for 10s, and triggers automated sub-1.5s rollback upon any performance regression.
-- **Circuit Breaker**: Prevents remediation cascading if $> 3$ actions occur within a 60-second window in the same failure domain.
-
-#### Layer 7: Network Black Box
-- **Append-Only Ledger**: Cryptographically chained log where each record hash satisfies:
-  $$H_n = \text{SHA256}(H_{n-1} \parallel \text{Timestamp} \parallel \text{EventType} \parallel \text{Payload})$$
-- **Forensic Replay**: Deterministic CLI and web-based replay tool allowing engineers and auditors to reconstruct incident timelines second-by-second.
+1. **Telemetry Generation & Streaming Ingestion (L1 → L2)**:
+   Physical and container switches (FRR/OVS) and GPU host interfaces stream high-frequency telemetry (gNMI counter ticks, eBPF socket drop events, optical transceiver power readings) to the Kafka bus at $> 100\text{k}$ events/sec.
+2. **Digital Twin Synchronization & Reconciliation (L2 → L3)**:
+   The Digital Twin synchronizer ingests Kafka event streams, updating graph node properties and link operational states in Neo4j within sub-second deltas, accompanied by a periodic 30-second full topology reconciliation.
+3. **Proactive & Reactive Anomaly Detection (L2/L3 → L4)**:
+   The AI Anomaly Engine inspects sliding window metrics. If sudden packet loss or queue surge occurs, the Isolation Forest flags an anomaly in $< 5\text{s}$. Concurrently, TFT/XGBoost models forecast impending transceiver blowouts $\ge 20\text{s}$ ahead.
+4. **Counterfactual Pre-Computation & Cache Hit (L3 → L5)**:
+   Prior to failure, the What-If Engine continuously simulates hypothetical link cuts and switch failures, scoring blast-radius impact and caching verified rerouting recipes in Redis. When an anomaly triggers, the system matches the fault signature to the cache, retrieving an optimal plan in $< 2\text{ms}$.
+5. **Causal Attribution & Incident Narrative (L4/L5 → L6)**:
+   The Root-Cause Analysis module traverses the Neo4j causal DAG, computes Bayesian posterior probabilities across candidate causes, eliminates downstream alert storms, and invokes the LLM narrative generator to produce an executive incident summary.
+6. **Policy Gating, Canary Deployment & Rollback (L5/L6 → L7)**:
+   The Decision Engine passes the candidate recovery action to the OPA policy engine. OPA validates autonomy constraints (L0–L4) and fabric safety invariants (max drained capacity $\le 25\%$, redundant GPU paths preserved). Upon approval, the Action Executor shifts a 5% canary. If health verifies for 10s, full remediation is committed; otherwise, sub-1.5s automatic rollback restores previous switch state.
+7. **Cryptographic Black Box Commitment & Forensics (L7)**:
+   Every telemetry tick, hypothesis, OPA decision, and actuation command is hashed into the append-only SHA-256 chain:
+   $$H_n = \text{SHA256}(H_{n-1} \parallel \text{Timestamp} \parallel \text{EventType} \parallel \text{Payload})$$
+   Auditors and NOC engineers can scrub through the incident second-by-second using the deterministic forensic replay CLI.
 
 ---
 

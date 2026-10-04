@@ -15,6 +15,13 @@ Aexyron eliminates the latency of human intervention in network operations cente
 6. **Act with Guardrails**: Execute automated remediations (L0–L4 autonomy) governed by Open Policy Agent (OPA), canaries, and circuit breakers.
 7. **Record & Replay**: Log every telemetry tick, hypothesis, and command to an append-only, SHA-256 hash-chained Black Box.
 
+### Core Architectural Principles
+
+The architecture is governed by three foundational tenets:
+- **Safety First**: No action without preflight simulation, formal OPA invariant checks, 5% canary shifts, and sub-1.5s rollback.
+- **Explainability**: Every decision is traceable through Bayesian posterior attribution and natural-language LLM incident narratives.
+- **Graduated Autonomy**: Operators retain definitive control across five formal operational tiers (L0–L4).
+
 ```mermaid
 flowchart TD
     subgraph DataPlane ["Live Network Data Plane (Containerlab / Switches / NICs)"]
