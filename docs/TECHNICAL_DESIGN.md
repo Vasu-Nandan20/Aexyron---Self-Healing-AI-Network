@@ -65,7 +65,35 @@ This project aims to:
 
 ---
 
-## 3. Seven-Layer System Architecture
+## 3. Related Work
+
+### 3.1 AIOps and Intent-Based Networking
+
+The term **AIOps** (Artificial Intelligence for IT Operations) was coined by Gartner in 2017 to describe platforms that combine big data, machine learning, and automation to enhance IT operations. Major commercial vendors (Moogsoft, BigPanda, Datadog) offer anomaly detection and event correlation, but their scope typically ends at alert enrichment, deduplication, and ticket routing—**not autonomous remediation**.
+
+**Intent-Based Networking (IBN)**, championed by Cisco (DNA Center / Catalyst Center), Apstra (now Juniper Apstra), and the IETF's Network Management Research Group (NMRG), aims to translate high-level business intent into network configuration. While IBN systems can validate that configuration matches declarative intent, they generally lack real-time streaming anomaly detection, predictive multi-horizon forecasting, and closed-loop automated healing.
+
+### 3.2 Digital Twin Approaches
+
+Network digital twins create a virtual replica of the network for testing and verification:
+- **Batfish** (Fogel et al., NSDI 2015): An open-source network configuration analysis tool that models the control plane offline. It can answer reachability, policy compliance, and routing simulation queries, but it does not incorporate live telemetry or perform continuous what-if resilience analysis.
+- **Forward Networks**: A commercial platform that builds a mathematical model of the network for verification. It operates on periodic configuration and state snapshots rather than live sub-second streaming data.
+- **VeriFlow / VMware NSX Intelligence** (Khurshid et al., NSDI 2013): Real-time verification of network forwarding invariants by checking the data plane after each update. Focuses strictly on correctness verification rather than predictive or automated healing.
+- **Digital Twin Network (DTN)** (IETF `draft-irtf-nmrg-network-digital-twin`): Defines a reference architecture for network digital twins, but does not specify ML-driven anomaly detection, causal root-cause analysis, or autonomous remediation.
+
+### 3.3 Chaos Engineering and Self-Healing
+
+Netflix's **Chaos Monkey** (2011) pioneered the practice of deliberately injecting failures to test distributed system resilience. Gremlin and LitmusChaos extended this to network-layer faults (latency, packet loss, interface corruptions). However, chaos engineering is a testing and validation methodology, not an active production healing system—it identifies weaknesses but does not autonomously repair them.
+
+Self-healing systems in the literature (e.g., IBM's Autonomic Computing manifesto, Kephart & Chess, 2003) define the classical **MAPE-K** loop (*Monitor, Analyze, Plan, Execute, Knowledge*). Our architecture directly implements MAPE-K but extends it with four foundational systems advancements:
+1. **A Live Digital Twin as a Safety Layer**: Grounded in live graph topology ($\ge 85\%$ routing fidelity) serving as a preflight simulation sandbox.
+2. **Continuous Counterfactual Reasoning**: Proactively simulating hypothetical failure branches before incidents occur.
+3. **Pre-Computed Recovery Plan Caching**: Pre-positioning validated remediation recipes in Redis to reduce planning latency to $< 2\text{ms}$.
+4. **An Immutable Cryptographic Black Box**: A SHA-256 hash-chained flight recorder providing deterministic second-by-second forensic incident replay and mathematical tamper-resistance.
+
+---
+
+## 4. Seven-Layer System Architecture
 
 ```mermaid
 flowchart TD
@@ -164,7 +192,7 @@ flowchart TD
 
 ---
 
-## 4. Autonomy Levels (L0 – L4) & Safety Guardrails
+## 5. Autonomy Levels (L0 – L4) & Safety Guardrails
 
 | Level | Designation | Execution Mode | Operator Involvement | Safe Failure Mode |
 | :---: | :--- | :--- | :--- | :--- |
@@ -176,7 +204,7 @@ flowchart TD
 
 ---
 
-## 5. Empirical Benchmark Validation Results
+## 6. Empirical Benchmark Validation Results
 
 The 500-trial statistical benchmark suite (`tests/test_benchmarks_e2e.py`) validates Aexyron against all target metrics across five randomized failure profiles:
 

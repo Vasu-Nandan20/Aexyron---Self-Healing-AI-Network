@@ -35,11 +35,35 @@ Aexyron addresses fundamental open challenges in autonomous network operations a
 
 | System | Architecture Model | Telemetry Modality | Remediation Latency | Counterfactual Pre-computation | Cryptographic Auditability | Autonomy Guardrails |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Batfish (NSDI '15)** | Offline Control-Plane Sim | Static Config Files | Batch Offline (N/A) | ❌ Offline Only | ❌ None | Static Invariant Checks |
+| **Forward Networks** | Formal Mathematical Model | Config Snapshots | Query-based (N/A) | ❌ Snapshot Verification | ❌ None | Snapshot Invariant Checks |
 | **Meta FBAR** | Rule-Based Workflows | Host & Switch Polling | ~3 to 8 minutes | ❌ None | ❌ Standard Logs | Manual / Threshold |
 | **Microsoft NetBouncer** | Active Probing / Host Agent | Host Probes | ~1 to 3 minutes | ❌ None | ❌ Standard Logs | Rule-Based Drop |
-| **Self-Driving Networks (Feamster et al.)** | Conceptual Framework | Flow-based | Theoretical | ❌ None | ❌ None | Unspecified |
 | **NetSentry** | Anomaly Detection | sFlow / SNMP | Reactive (~60s) | ❌ None | ❌ None | Scripted Actions |
-| **Aexyron (This Work)** | **Autonomous Closed-Loop Digital Twin** | **gNMI + eBPF + sFlow + OTel** | **< 15 seconds** | **✅ Continuous in Redis** | **✅ SHA-256 Hash Chain** | **✅ Formal OPA (L0–L4) + Canary + Rollback** |
+| **Self-Driving Networks (Feamster)** | Conceptual Vision | Flow-based | Theoretical | ❌ None | ❌ None | Unspecified |
+| **Aexyron (This Work)** | **Autonomous Closed-Loop Digital Twin** | **gNMI + eBPF + sFlow + OTel** | **< 15 seconds** | **✅ Continuous in Redis (<2ms)** | **✅ SHA-256 Hash Chain** | **✅ Formal OPA (L0–L4) + Canary + Rollback** |
+
+---
+
+## 📚 Related Work Taxonomy & The Extended MAPE-K Loop
+
+### 1. AIOps & Intent-Based Networking (IBN)
+- **AIOps Platforms (Moogsoft, BigPanda, Datadog)**: Specialize in event deduplication, alert correlation, and ticket routing. However, their scope ends at alert enrichment—they do not autonomously remediate live network infrastructure.
+- **Intent-Based Networking (Cisco DNA Center, Juniper Apstra, IETF NMRG)**: Translates declarative intent into configurations, but lacks real-time sub-5s streaming anomaly detection, predictive multi-horizon forecasting, and closed-loop self-healing.
+
+### 2. Network Digital Twins & Data Plane Verification
+- **Offline / Snapshot Modeling (Batfish, Forward Networks)**: Powerful for pre-deployment CI/CD configuration checks, but incapable of ingesting live streaming telemetry or performing real-time counterfactual branch simulation.
+- **Real-Time Data Plane Checkers (VeriFlow, VMware NSX Intelligence)**: Validate packet invariants at runtime, but do not provide predictive failure forecasting or automated remediation generation.
+- **IETF DTN Reference Architecture (`draft-irtf-nmrg-network-digital-twin`)**: Defines conceptual digital twin planes, which Aexyron operationalizes with concrete graph synchronization, Bayesian RCA, and OPA-governed closed loops.
+
+### 3. Chaos Engineering vs. Autonomous Self-Healing
+- **Chaos Tools (Chaos Monkey, Gremlin, LitmusChaos)**: Chaos injection methodologies test failure modes, but provide no remediation engine. Aexyron uses chaos injection as an automated validation harness.
+- **Extended MAPE-K Architecture**: Extends the classical autonomic loop (Kephart & Chess, 2003) across four key dimensions:
+  1. *Monitor* $\to$ Multi-modal telemetry fusion (gNMI + eBPF + sFlow).
+  2. *Analyze* $\to$ Fast-path Isolation Forests (<5s) + TFT/XGBoost prediction ($\ge$20s) + Bayesian RCA.
+  3. *Plan* $\to$ Continuous counterfactual what-if simulation (<2s) with Redis plan caching (<2ms).
+  4. *Execute* $\to$ Formally gated OPA guardrails (L0–L4) with canary traffic shifts and sub-1.5s automatic rollback.
+  5. *Knowledge* $\to$ Immutable, SHA-256 hash-chained Black Box recorder with deterministic second-by-second forensic replay.
 
 ---
 
