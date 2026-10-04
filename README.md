@@ -61,6 +61,21 @@ In controlled Containerlab experiments on Clos leaf-spine fabrics, Aexyron is en
 
 *Table 1: Autonomy gap analysis — state of the art vs. this project.*
 
+### Feature Comparison Matrix
+
+| System / Approach | Live Twin | Prediction | Auto-Heal | What-If | Black Box |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **AIOps Platforms** (Moogsoft, BigPanda) | ❌ None | Partial | ❌ None | ❌ None | ❌ None |
+| **Batfish** (NSDI '15) | Offline | ❌ None | ❌ None | Offline | ❌ None |
+| **Forward Networks** | Snapshot | ❌ None | ❌ None | Snapshot | ❌ None |
+| **VeriFlow** (NSDI '13) | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Chaos Engineering** (Chaos Monkey) | ❌ None | ❌ None | ❌ None | Testing | ❌ None |
+| **Aexyron (This Project)** | **✅ 30s Cycle** | **✅ $\ge$20s Horizon** | **✅ L0–L4 Autonomous** | **✅ Continuous Live** | **✅ Replayable Audit** |
+
+*Table 2: Feature comparison with related work.*
+
+> **Key Takeaway**: No existing system combines all five capabilities: a live, continuously-synchronized digital twin ($\ge 85\%$ fidelity); ML-driven failure prediction ($\ge 20\text{s}$ ahead); autonomous multi-level healing with guardrails (L0–L4); continuous what-if counterfactual reasoning ($< 2\text{ms}$ lookup); and an immutable, replayable event log. Aexyron is engineered specifically to fill this operational gap.
+
 ---
 
 ## 🎯 Objectives & Scope Boundary

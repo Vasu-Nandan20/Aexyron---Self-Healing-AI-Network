@@ -85,11 +85,33 @@ Network digital twins create a virtual replica of the network for testing and ve
 
 Netflix's **Chaos Monkey** (2011) pioneered the practice of deliberately injecting failures to test distributed system resilience. Gremlin and LitmusChaos extended this to network-layer faults (latency, packet loss, interface corruptions). However, chaos engineering is a testing and validation methodology, not an active production healing system—it identifies weaknesses but does not autonomously repair them.
 
-Self-healing systems in the literature (e.g., IBM's Autonomic Computing manifesto, Kephart & Chess, 2003) define the classical **MAPE-K** loop (*Monitor, Analyze, Plan, Execute, Knowledge*). Our architecture directly implements MAPE-K but extends it with four foundational systems advancements:
-1. **A Live Digital Twin as a Safety Layer**: Grounded in live graph topology ($\ge 85\%$ routing fidelity) serving as a preflight simulation sandbox.
-2. **Continuous Counterfactual Reasoning**: Proactively simulating hypothetical failure branches before incidents occur.
-3. **Pre-Computed Recovery Plan Caching**: Pre-positioning validated remediation recipes in Redis to reduce planning latency to $< 2\text{ms}$.
-4. **An Immutable Cryptographic Black Box**: A SHA-256 hash-chained flight recorder providing deterministic second-by-second forensic incident replay and mathematical tamper-resistance.
+Self-healing systems in the literature (e.g., IBM's Autonomic Computing manifesto, Kephart & Chess, 2003) define the classical **MAPE-K** loop (*Monitor, Analyze, Plan, Execute, Knowledge*). Our architecture directly implements MAPE-K but extends it with:
+1. A **digital twin as a safety layer** ($\ge 85\%$ routing fidelity) serving as a preflight simulation sandbox;
+2. **Continuous counterfactual reasoning** exploring failure permutations before incidents occur;
+3. **Pre-computed recovery plans** cached in Redis for $< 2\text{ms}$ retrieval; and
+4. An **immutable audit trail** via a SHA-256 hash-chained Black Box recorder with deterministic second-by-second forensic replay.
+
+### 3.4 Gap Analysis
+
+| System / Approach | Live Twin | Prediction | Auto-Heal | What-If | Black Box |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **AIOps Platforms** | ❌ None | Partial | ❌ None | ❌ None | ❌ None |
+| **Batfish** | Offline | ❌ None | ❌ None | Offline | ❌ None |
+| **Forward Networks** | Snapshot | ❌ None | ❌ None | Snapshot | ❌ None |
+| **VeriFlow** | ❌ None | ❌ None | ❌ None | ❌ None | ❌ None |
+| **Chaos Engineering** | ❌ None | ❌ None | ❌ None | Testing | ❌ None |
+| **This Project (Aexyron)** | **✅ 30s** | **✅ $\ge$20s** | **✅ L0–L4** | **✅ Live** | **✅ Replay** |
+
+*Table 2: Feature comparison with related work.*
+
+No existing system combines all five capabilities:
+1. A **live, continuously-synchronized digital twin** (30s cycle, sub-second deltas, $\ge 85\%$ routing fidelity);
+2. **ML-driven failure prediction** ($\ge 20\text{s}$ forecast horizon);
+3. **Autonomous multi-level healing with guardrails** (L0–L4 governed by OPA);
+4. **Continuous what-if counterfactual reasoning** with pre-computed recovery plan caching ($< 2\text{ms}$ lookup);
+5. An **immutable, replayable event log** (SHA-256 hash-chained Black Box).
+
+This project fills that critical gap.
 
 ---
 
