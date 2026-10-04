@@ -13,9 +13,10 @@
 **An Autonomous, Digital-Twin-Driven Network Operations System with Counterfactual Resilience Analysis and a Replayable Black Box Recorder.**
 
 [Key Results](#-key-results--performance-targets) •
+[Gap Analysis](#-autonomy-gap-analysis) •
+[Technical Design](docs/TECHNICAL_DESIGN.md) •
 [Architecture](#-seven-layer-system-architecture) •
 [Autonomy Levels](#-autonomy-levels-l0--l4) •
-[13-Week Roadmap](#-13-week-implementation-roadmap) •
 [Quick Start](#-quick-start) •
 [Documentation](#-documentation)
 
@@ -45,6 +46,36 @@ In controlled Containerlab experiments on Clos leaf-spine fabrics, Aexyron is en
 | **False-Positive Rate (FPR)** | ~18% (alert fatigue) | **< 5%** | **> 3.5× Reduction** |
 | **Recovery Success Rate** | 82% (manual configuration errors)| **> 90%** | **High-Yield Automation** |
 | **Unintended Side-Effect Rate** | ~12% | **< 2%** | **Formally Gated by OPA** |
+
+---
+
+## 🔍 Autonomy Gap Analysis
+
+| Capability | State of the Art | This Project (Aexyron) |
+| :--- | :--- | :--- |
+| **Prediction** | None / basic trending | **TFT / XGBoost ($\ge$ 20s horizon)** |
+| **Root Cause** | Manual correlation across dashboards | **Causal graph + Bayesian inference** |
+| **Simulation** | Offline batch verification (Batfish) | **Live digital twin, 30s what-if cycle** |
+| **Recovery** | Manual runbooks / fragile scripts | **Auto-execute with OPA guardrails (L0–L4)** |
+| **Audit** | Scattered logs and CLI histories | **Immutable Black Box + deterministic replay** |
+
+*Table 1: Autonomy gap analysis — state of the art vs. this project.*
+
+---
+
+## 🎯 Objectives & Scope Boundary
+
+As detailed in the [Technical Design Document](docs/TECHNICAL_DESIGN.md):
+- **Autonomous Closed-Loop Control**: 7-layer architecture closing the gap from detection through automated recovery.
+- **High-Fidelity Digital Twin**: Live graph mirroring topology with $\ge 85\%$ routing fidelity and serving as preflight simulation sandbox.
+- **Sub-5s Anomaly & $\ge$20s Failure Forecasting**: Fast-path Isolation Forests and deep temporal forecasting.
+- **Continuous Counterfactual Engine**: Continuous what-if exploration with $< 2\text{s}$ scenario simulation and $< 2\text{ms}$ plan cache lookup.
+- **Causal Root Cause Analysis**: Disambiguating symptom cascades via Bayesian inference and generating LLM incident narratives.
+- **Formal Policy & Guardrail Enforcement**: Five autonomy levels (L0–L4) gated by Open Policy Agent, canary deployments, and circuit breakers.
+- **Cryptographic Flight Recorder**: Append-only, SHA-256 hash-chained immutable ledger with deterministic second-by-second replay.
+- **Empirical Validation**: 500-trial benchmark suite and 100-failure chaos test suite in a Containerlab environment.
+
+**Scope Boundary**: The prototype targets a leaf-spine CLOS topology (2 spines, 4 leaves, 6–8 servers) running BGP/OSPF on FRRouting within Containerlab. Production-grade HA, multi-vendor support, and WAN-scale testing are designated as future work.
 
 ---
 

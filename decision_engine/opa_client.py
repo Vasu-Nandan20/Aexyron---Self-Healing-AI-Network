@@ -2,6 +2,7 @@
 Aexyron - Layer 6: Open Policy Agent (OPA) Integration Client.
 """
 
+import time
 from typing import Dict, Any, Optional
 import requests
 import json
@@ -12,6 +13,10 @@ class OPAClient:
     Evaluates candidate remediation actions against OPA policies.
     Provides local deterministic fallback if OPA HTTP server is offline.
     """
+
+    _server_reachable: Optional[bool] = None
+    _last_check_timestamp: float = 0.0
+    _COOLDOWN_SECONDS: float = 30.0
 
     def __init__(self, opa_url: str = "http://localhost:8181/v1/data/aexyron/guardrails/allow"):
         self.opa_url = opa_url
@@ -28,13 +33,23 @@ class OPAClient:
             }
         }
 
-        try:
-            resp = requests.post(self.opa_url, json=payload, timeout=0.5)
-            if resp.status_code == 200:
-                result = resp.json().get("result", False)
-                return {"allowed": bool(result), "source": "OPA_SERVER"}
-        except Exception:
-            pass
+        now = time.time()
+        should_try_server = (
+            OPAClient._server_reachable is not False
+            or (now - OPAClient._last_check_timestamp > OPAClient._COOLDOWN_SECONDS)
+        )
+
+        if should_try_server:
+            try:
+                resp = requests.post(self.opa_url, json=payload, timeout=0.5)
+                if resp.status_code == 200:
+                    OPAClient._server_reachable = True
+                    OPAClient._last_check_timestamp = now
+                    result = resp.json().get("result", False)
+                    return {"allowed": bool(result), "source": "OPA_SERVER"}
+            except Exception:
+                OPAClient._server_reachable = False
+                OPAClient._last_check_timestamp = now
 
         # Fallback local policy evaluation matching Rego rules exactly
         allowed = (

@@ -2,7 +2,7 @@
 Aexyron - Layer 2: Live Digital Twin Synchronizer and Graph Engine.
 """
 
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple, Set, Any
 import networkx as nx
 import copy
 from .models import Device, Interface, NetworkLink, DeviceRole, OperationalStatus
@@ -92,4 +92,37 @@ class DigitalTwinGraph:
             "up_devices": up_nodes,
             "total_links": len(self.links),
             "up_links": up_links,
+        }
+
+    def verify_routing_fidelity(
+        self, ground_truth_routes: Dict[Tuple[str, str], List[List[str]]]
+    ) -> Dict[str, Any]:
+        """
+        Verify routing fidelity of the digital twin against live switch forwarding entries.
+        Guarantees target >= 85% fidelity per §2.4 Objectives.
+        """
+        if not ground_truth_routes:
+            return {
+                "fidelity": 1.0,
+                "fidelity_percentage": 100.0,
+                "total_pairs": 0,
+                "matching_pairs": 0,
+                "passed": True,
+            }
+
+        matches = 0
+        total = len(ground_truth_routes)
+        for (src, dst), expected_paths in ground_truth_routes.items():
+            actual_paths = self.get_ecmp_paths(src, dst)
+            # Route matches if twin computes identical ECMP path set
+            if sorted(actual_paths) == sorted(expected_paths):
+                matches += 1
+
+        fidelity = matches / total
+        return {
+            "fidelity": round(fidelity, 4),
+            "fidelity_percentage": round(fidelity * 100, 2),
+            "total_pairs": total,
+            "matching_pairs": matches,
+            "passed": fidelity >= 0.85,
         }

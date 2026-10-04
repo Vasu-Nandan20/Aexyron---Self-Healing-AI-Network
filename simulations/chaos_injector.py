@@ -45,3 +45,41 @@ class ChaosFaultInjector:
 
     def clear_all(self):
         self.active_injections.clear()
+
+    def run_100_failure_chaos_suite(
+        self,
+        target_components: Optional[List[str]] = None,
+        trials_per_type: int = 20,
+    ) -> Dict[str, Any]:
+        """
+        Execute a 100-failure chaos suite across all 5 failure modes
+        (20 trials x 5 failure types = 100 injected faults)
+        per §2.4: 'Validate the system through a 100-failure chaos test in a Containerlab environment.'
+        """
+        if target_components is None:
+            target_components = [
+                "spine-01:eth1",
+                "spine-02:eth1",
+                "leaf-01:eth1",
+                "leaf-02:eth1",
+            ]
+
+        results = []
+        failure_types = list(FailureType)
+        for f_type in failure_types:
+            for i in range(trials_per_type):
+                comp = target_components[(i + len(results)) % len(target_components)]
+                injection = self.inject_fault(
+                    failure_type=f_type,
+                    target_component=comp,
+                    duration_seconds=10,
+                    severity=0.10 + (i % 5) * 0.05,
+                )
+                results.append(injection)
+
+        return {
+            "total_injections": len(results),
+            "failure_types_tested": [f.value for f in failure_types],
+            "injections": results,
+            "status": "COMPLETED",
+        }

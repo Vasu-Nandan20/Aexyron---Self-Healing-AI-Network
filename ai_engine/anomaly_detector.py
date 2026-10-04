@@ -14,23 +14,35 @@ class FastAnomalyDetector:
     Achieves detection within < 5 seconds of symptom emergence.
     """
 
+    _cached_models: Dict[float, IsolationForest] = {}
+
     def __init__(self, contamination: float = 0.05):
         self.extractor = WindowedFeatureExtractor(window_size=10)
-        self.model = IsolationForest(
-            n_estimators=50,
-            contamination=contamination,
-            random_state=42,
-        )
+        self.contamination = contamination
         self.is_fitted = False
         self._warmup_baseline()
 
     def _warmup_baseline(self):
         """Fit with nominal baseline data so detector is active immediately."""
-        # Baseline features: nominal drop rates (0.0), small variance
-        nominal_data = np.random.normal(loc=0.01, scale=0.005, size=(100, 4))
-        # Ensure no negative drops
+        if self.contamination in FastAnomalyDetector._cached_models:
+            self.model = FastAnomalyDetector._cached_models[self.contamination]
+            self.is_fitted = True
+            return
+
+        self.model = IsolationForest(
+            n_estimators=50,
+            contamination=self.contamination,
+            random_state=42,
+        )
+        rng = np.random.RandomState(42)
+        means = rng.normal(loc=0.001, scale=0.0003, size=(100, 1))
+        stds = rng.normal(loc=0.0002, scale=0.00005, size=(100, 1))
+        deltas = rng.normal(loc=0.0, scale=0.0001, size=(100, 1))
+        latests = rng.normal(loc=0.001, scale=0.0003, size=(100, 1))
+        nominal_data = np.hstack([means, stds, deltas, latests])
         nominal_data = np.clip(nominal_data, 0.0, None)
         self.model.fit(nominal_data)
+        FastAnomalyDetector._cached_models[self.contamination] = self.model
         self.is_fitted = True
 
     def ingest_metric(self, key: str, value: float) -> Optional[Dict[str, Any]]:
